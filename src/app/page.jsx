@@ -1,71 +1,78 @@
 'use client'
-
-import SRPSection from '../components/SRPsection'
-import DailySummary from '../components/DailySummary'
-import HomeGraph from '../components/HomeGraph'
-import greenTasks from '../data/greenTasks'
-import whiteTasks from '../data/whiteTasks'
-import blackTasks from '../data/blackTasks'
 import { useState, useEffect } from 'react'
+import SaveButton from '../components/SaveButton'
+import AutoSave from '../components/AutoSave'
+import { useSettings } from '../contexts/SettingsContext'
 
-export default function HomePage() {
-    const [completedTasks, setCompletedTasks] = useState([])
-    const [savedPointsToday, setSavedPointsToday] = useState(0)
-
-    // Sync from localStorage on mount
-    useEffect(() => {
-        const today = new Date().toISOString().split('T')[0]
-        const saved = JSON.parse(localStorage.getItem('savedPoints') || '{}')
-        if (saved[today]) {
-            setSavedPointsToday(saved[today])
-        }
-    }, [])
-
-    const handleToggle = (task, checked) => {
-        setCompletedTasks((prev) =>
-            checked ? [...prev, task] : prev.filter((t) => t.id !== task.id),
-        )
+export default function Home() {
+  const [dailyPoints, setDailyPoints] = useState(0)
+  const [savedToday, setSavedToday] = useState(false)
+  const { settings } = useSettings()
+  
+  useEffect(() => {
+    // Check if we already have points saved for today
+    const today = new Date().toISOString().split('T')[0]
+    const savedPoints = JSON.parse(localStorage.getItem('savedPoints') || '{}')
+    
+    if (savedPoints[today]) {
+      setDailyPoints(parseFloat(savedPoints[today]))
+      setSavedToday(true)
     }
-
-    const dailyPointsRaw = completedTasks.reduce((acc, task) => acc + task.points, 0)
-    const dailyPoints = Math.round(dailyPointsRaw * 100) / 100
-
-    // Choose live calculation OR fallback to saved
-    const displayedPoints = dailyPoints > 0 ? dailyPoints : savedPointsToday
-
-    return (
-        <>
-            {/* Floating Summary + Save */}
-            <div className="fixed top-5 right-6 z-50">
-                <DailySummary dailyPoints={displayedPoints} />
-            </div>
-
-            {/* Main content */}
-            <div className="p-4 space-y-6">
-                {/* Chart */}
-                <div className="w-full h-48 bg-gray-100 rounded-xl shadow-md flex items-center justify-center">
-                    <HomeGraph />
-                </div>
-
-                {/* Task sections */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    <SRPSection
-                        title="Green Points"
-                        tasks={greenTasks}
-                        onToggle={handleToggle}
-                    />
-                    <SRPSection
-                        title="White Points"
-                        tasks={whiteTasks}
-                        onToggle={handleToggle}
-                    />
-                    <SRPSection
-                        title="Black Points"
-                        tasks={blackTasks}
-                        onToggle={handleToggle}
-                    />
-                </div>
-            </div>
-        </>
-    )
+  }, [])
+  
+  const handleIncrement = () => {
+    const step = parseFloat(settings.incrementStep || 0.1)
+    setDailyPoints(prev => parseFloat((prev + step).toFixed(1)))
+    setSavedToday(false)
+  }
+  
+  const handleDecrement = () => {
+    const step = parseFloat(settings.incrementStep || 0.1)
+    setDailyPoints(prev => Math.max(0, parseFloat((prev - step).toFixed(1))))
+    setSavedToday(false)
+  }
+  
+  const handleSave = () => {
+    setSavedToday(true)
+  }
+  
+  return (
+    <div className="flex flex-col items-center justify-center min-h-[80vh]">
+      <div className={`bg-white dark:bg-gray-800 rounded-lg shadow-md p-8 ${
+        settings.displayMode === 'compact' ? 'max-w-xs' : 'max-w-md w-full'
+      }`}>
+        <div className="flex flex-col items-center">
+          <div className="text-6xl font-bold mb-6" style={{ color: 'var(--theme-color)' }}>
+            {dailyPoints.toFixed(1)}
+          </div>
+          
+          <div className="flex gap-4 mb-6">
+            <button
+              onClick={handleDecrement}
+              className="bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-800 dark:text-white font-bold py-2 px-4 rounded-full text-xl"
+            >
+              -
+            </button>
+            <button
+              onClick={handleIncrement}
+              className="bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-800 dark:text-white font-bold py-2 px-4 rounded-full text-xl"
+            >
+              +
+            </button>
+          </div>
+          
+          <div className="flex items-center gap-2">
+            <SaveButton dailyPoints={dailyPoints} onSave={handleSave} />
+            {savedToday && (
+              <span className="text-green-600 dark:text-green-400 text-sm">
+                ✓ Saved
+              </span>
+            )}
+          </div>
+        </div>
+      </div>
+      
+      <AutoSave dailyPoints={dailyPoints} />
+    </div>
+  )
 }

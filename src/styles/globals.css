@@ -9,7 +9,22 @@
 
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+  --base-font-size: 1rem;
+
+  --color-blue-600: #2563eb;
+  --color-purple-600: #9333ea;
+  --color-green-600: #16a34a;
+  --color-red-600: #dc2626;
+  --color-amber-600: #d97706;
+  
+  --theme-color: var(--color-blue-600);
 }
+
+/* Apply font size to body */
+body {
+  font-size: var(--base-font-size);
+}
+
 /* === Dark Mode Variables === */
 @media (prefers-color-scheme: dark) {
   :root {
@@ -24,4 +39,14 @@ body {
   font-family: var(--font-sans), system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+/* Apply theme color to navbar gradient */
+.bg-gradient-to-r.from-indigo-500.to-blue-700 {
+  background: linear-gradient(to right, var(--theme-color), color-mix(in srgb, var(--theme-color) 70%, black));
+}
+
+/* Apply theme color to toggle switches */
+.peer-checked\:bg-blue-600:checked {
+  background-color: var(--theme-color);
 }
